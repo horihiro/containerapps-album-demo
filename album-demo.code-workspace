@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "azure"
+		},
+		{
+			"path": "containerapps-albumapi-javascript"
+		},
+		{
+			"path": "containerapps-albumui"
+		}
+	],
+	"settings": {}
+}
