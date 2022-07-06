@@ -8,6 +8,15 @@
 		},
 		{
 			"path": "containerapps-albumapi-js"
+		},
+		{
+			"path": "containerapps-albumapi-csharp"
+		},
+		{
+			"path": "containerapps-albumapi-go"
+		},
+		{
+			"path": "containerapps-albumapi-python"
 		}
 	],
 	"settings": {}
