@@ -1,10 +1,17 @@
 
 param location string = resourceGroup().location
+param acrName string
+param uiAppName string
+param apiAppName string
+
+resource containerregistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' existing = {
+  name: acrName
+}
 
 module loganalytics 'loganalytcs.bicep' = {
   name: 'loganalytics-deploy'
   params: {
-    name: 'la-demo-containerapp'
+    name: 'la-containerapps-album'
     location: location
   }
 }
@@ -12,7 +19,7 @@ module loganalytics 'loganalytcs.bicep' = {
 module containerenv 'containerenv.bicep' = {
   name: 'containerenv-deploy'
   params: {
-    name: 'ce-demo-containerapp'
+    name: 'ce-containerapps-album'
     location: location
     logAnalyticsName: loganalytics.outputs.name
   }
@@ -21,30 +28,30 @@ module containerenv 'containerenv.bicep' = {
 module containerAppApi 'containerapp.bicep' = {
   name: 'containerapp-api-deploy'
   params: {
-    name: 'ca-demo-apiapp'
+    name: apiAppName
     location: location
     envName: containerenv.outputs.name
-    ingressEnabled: true
-    ingressTargetPort: 3000
-    externalIngressEnabled: false
-    daprAppId: 'albumapi'
+    ingressEnabled: false
+    // ingressTargetPort: 3000
+    // externalIngressEnabled: false
+    daprAppId: apiAppName
     daprAppPort: 3000
-    imageName: 'acrhihorika.azurecr.io/containerapp-api:latest'
+    imageName: '${containerregistry.name}.azurecr.io/${apiAppName}:latest'
   }
 }
 
 module containerAppUi 'containerapp.bicep' = {
   name: 'containerapp-ui-deploy'
   params: {
-    name: 'ca-demo-uiapp'
+    name: uiAppName
     location: location
     envName: containerenv.outputs.name
     ingressEnabled: true
     ingressTargetPort: 3000
     externalIngressEnabled: true
-    daprAppId: 'albumui'
+    daprAppId: uiAppName
     daprAppPort: 3000
-    imageName: 'acrhihorika.azurecr.io/containerapp-ui:latest'
+    imageName: '${containerregistry.name}.azurecr.io/${uiAppName}:latest'
     env: [
       {
         name: 'API_BASE_URL'
@@ -52,7 +59,7 @@ module containerAppUi 'containerapp.bicep' = {
       }
       {
         name: 'API_APP_ID'
-        value: 'albumapi'
+        value: apiAppName
       }
     ]
   }

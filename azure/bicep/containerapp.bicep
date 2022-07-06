@@ -7,9 +7,9 @@ param location string = resourceGroup().location
 param env array = []
 param daprAppId string
 param ingressEnabled bool = false
-param ingressTargetPort int = 8000
+param ingressTargetPort int = 3000
 param externalIngressEnabled bool = false
-param daprAppPort int = 3500
+param daprAppPort int = 3000
 
 param secretName string = 'reg-pswd-${newGuid()}'
 
@@ -22,7 +22,6 @@ resource containerenv 'Microsoft.App/managedEnvironments@2022-03-01' existing = 
 
 resource acr 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' existing = {
   name: acrUser
-  scope: resourceGroup('rg-hihorika-domain')
 }
 
 resource containerapp 'Microsoft.App/containerApps@2022-03-01' = {
