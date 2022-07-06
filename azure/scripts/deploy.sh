@@ -1,7 +1,5 @@
 #!/bin/bash
 CURRENT_DIR="$(dirname "$(dirname "$(dirname "$(realpath "${BASH_SOURCE:-0}")")")")"
-# echo ${CURRENT_DIR}
-# exit 0
 
 ids=($(az account show | jq -r '.id,.tenantId'))
 if [ -z "${ids[*]}" ]; then exit 1; fi
@@ -28,7 +26,6 @@ while true
 do
   echo -n "Enter resource group name: "
   read rgName
-# rgName=aaa-rg-albumservice-demo
 echo
   echo "  az deployment sub create \\"
   echo "    --location \"${location}\" \\"
@@ -44,7 +41,7 @@ echo "https://portal.azure.com/#@${tenantId}/resource/subscriptions/${subId}/res
 echo
 while true
 do
-  echo -n "Type \"ok\" to proceed:"
+  echo -n "Type \"ok\" to proceed: "
   read ok
   if [ "${ok}" == "ok" ]; then break; fi
 done
@@ -70,17 +67,16 @@ echo "https://portal.azure.com/#@${tenantId}/resource/subscriptions/${subId}/res
 echo
 while true
 do
-  echo -n "Type \"ok\" to proceed:"
+  echo -n "Type \"ok\" to proceed: "
   read ok
   if [ "${ok}" == "ok" ]; then break; fi
 done
 echo
-# acrName=acralbumdemo
 
 # Deploy and build new container images to Azure Container Registry
 cd "${CURRENT_DIR}"
-apiImageList=$(ls -d */ | grep albumapi | awk '{ sub(/\/$/, ""); print }')
-uiImageList=$(ls -d */ | grep albumui | awk '{ sub(/\/$/, ""); print }')
+apiImageList=($(ls -d */ | grep albumapi | awk '{ sub(/\/$/, ""); print }'))
+uiImageList=($(ls -d */ | grep albumui | awk '{ sub(/\/$/, ""); print }'))
 cd -  > /dev/null
 
 for index in "${!uiImageList[@]}"
@@ -106,7 +102,6 @@ else
 fi
 uiImage=${uiImageList[${i}]}
 echo "  UI app: ${uiImage}"
-
 uiDockerfileDir=$(dirname $(find "${CURRENT_DIR}/${uiImage}" -name "Dockerfile"))
 echo
 echo "  az acr build \\"
@@ -116,15 +111,15 @@ echo "    \"${uiDockerfileDir}\""
 echo
 az acr build -r "${acrName}" -t "${acrName}.azurecr.io/${uiImage}:latest" "${uiDockerfileDir}"
 
-for index in "${!apiImageList[@]}"
+for index in "${!uiImageList[@]}"
 do
-  [[ -z "$(find "${CURRENT_DIR}/${apiImageList[$index]}" -name "Dockerfile")" ]] && unset -v 'apiImageList[$index]'
+  [[ -z "$(find "${CURRENT_DIR}/${apiImageList[$index]}" -name "Dockerfile")" ]] && unset -v '${apiImageList[$index]}'
 done
 apiImageList=("${apiImageList[@]}")
 if [ "${#apiImageList[@]}" == "1" ]; then
   apiImageIndex=0
 else
-  echo "Select UI app image:"
+  echo "Select API app image:"
   for index in "${!apiImageList[@]}";
   do
     echo "$index: ${apiImageList[$index]}"
@@ -157,7 +152,7 @@ echo "https://portal.azure.com/#@${tenantId}/resource/subscriptions/${subId}/res
 echo
 while true
 do
-  echo -n "Type \"ok\" to proceed:"
+  echo -n "Type \"ok\" to proceed: "
   read ok
   if [ "${ok}" == "ok" ]; then break; fi
 done
