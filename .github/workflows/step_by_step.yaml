@@ -1,0 +1,96 @@
+name: Deploy Container Apps Album-demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      resourceGroupName:
+        description: 'Resource Group Name'
+        required: true
+        type: string
+      acrName:
+        description: 'ACR Resource Name'
+        required: true
+        type: string
+      uiAppImage:
+        description: 'UI App Name'
+        required: true
+        default: 'containerapps-albumui'
+        type: choise
+        options:
+        - containerapps-albumui
+      apiAppImage:
+        description: 'UI App Name'
+        required: true
+        default: 'containerapps-albumapi-csharp'
+        type: choise
+        options:
+        - containerapps-albumapi-csharp
+        - containerapps-albumapi-go
+        - containerapps-albumapi-js
+        - containerapps-albumapi-python
+
+
+permissions:
+
+jobs:
+  create-resource-group:
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    if: ${{ github.event.inputs.resourceGroupName }} 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create Resource Group
+        run: |
+          echo ${{ github.event.inputs.resourceGroupName }}
+
+  create-acr-resource:
+    needs: [create-resource-group]
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    if: ${{ github.event.inputs.acrName }} 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create ACR Resource
+        run: |
+          echo ${{ github.event.inputs.acrName }}
+
+  build-uiapp-image:
+    needs: [create-acr-resource]
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    if: ${{ github.event.inputs.uiAppImage }} 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build UI app image
+        run: |
+          echo ${{ github.event.inputs.uiAppImage }}
+
+  build-apiapp-image:
+    needs: [create-acr-resource]
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    if: ${{ github.event.inputs.apiAppImage }} 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build API app image
+        run: |
+          echo ${{ github.event.inputs.apiAppImage }}
+
+  deploy-containerapp-resource:
+    needs: [build-uiapp-image, build-apiapp-image]
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy Container App resource
+        run: |
+          echo true
+
+  clean-up-resources:
+    needs: [deploy-containerapp-resource]
+    runs-on: ubuntu-18.04
+    environment: step-by-step
+    steps:
+      - name: Clean up resources
+        run: |
+          echo Done.
