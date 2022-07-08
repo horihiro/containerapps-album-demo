@@ -31,7 +31,8 @@ on:
 
 
 permissions:
-  id-token: read
+  contents: read
+  id-token: write
 
 jobs:
   create-resource-group:
