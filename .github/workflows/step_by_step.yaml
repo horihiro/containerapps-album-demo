@@ -15,14 +15,14 @@ on:
         description: 'UI App Name'
         required: true
         default: 'containerapps-albumui'
-        type: choise
+        type: choice
         options:
         - containerapps-albumui
       apiAppImage:
-        description: 'UI App Name'
+        description: 'API App Name'
         required: true
         default: 'containerapps-albumapi-csharp'
-        type: choise
+        type: choice
         options:
         - containerapps-albumapi-csharp
         - containerapps-albumapi-go
