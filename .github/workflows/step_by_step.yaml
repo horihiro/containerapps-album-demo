@@ -29,7 +29,6 @@ on:
         - containerapps-albumapi-js
         - containerapps-albumapi-python
 
-
 permissions:
   contents: read
   id-token: write
@@ -41,42 +40,89 @@ jobs:
     if: ${{ github.event.inputs.resourceGroupName }} 
     steps:
       - uses: actions/checkout@v2
-      - name: Create Resource Group
-        run: |
-          echo ${{ github.event.inputs.resourceGroupName }}
 
-  create-acr-resource:
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        uses: azure/arm-deploy@v1
+        with:
+          scope: subscription
+          region: japaneast
+          template: ./azure/bicep/resourceGroup.bicep
+          parameters: resourceGroupName=${{ github.event.inputs.resourceGroupName }}
+
+  deploy-acr-resource:
     needs: [create-resource-group]
     runs-on: ubuntu-18.04
     environment: step-by-step
     if: ${{ github.event.inputs.acrName }} 
     steps:
       - uses: actions/checkout@v2
-      - name: Create ACR Resource
-        run: |
-          echo ${{ github.event.inputs.acrName }}
+
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy ACR Resource
+        uses: azure/arm-deploy@v1
+        with:
+          resourceGroupName:  ${{ github.event.inputs.resourceGroupName }}
+          template: ./azure/bicep/containerregistry.bicep
+          parameters: acrName=${{ github.event.inputs.acrName }}
 
   build-uiapp-image:
-    needs: [create-acr-resource]
+    needs: [deploy-acr-resource]
     runs-on: ubuntu-18.04
     environment: step-by-step
     if: ${{ github.event.inputs.uiAppImage }} 
     steps:
       - uses: actions/checkout@v2
+
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Build UI app image
         run: |
-          echo ${{ github.event.inputs.uiAppImage }}
+          echo
+          echo "  az acr build \\"
+          echo "    --registry \"${{ github.event.inputs.acrName }}\" \\"
+          echo "    --image \"${{ github.event.inputs.acrName }}.azurecr.io/${{ github.event.inputs.uiAppImage }}:latest\" \\"
+          echo "    \"./${{ github.event.inputs.uiAppImage }}/src\""
+          echo
+          az acr build -r "${{ github.event.inputs.acrName }}" -t "${{ github.event.inputs.acrName }}.azurecr.io/${{ github.event.inputs.uiAppImage }}:latest" "./${{ github.event.inputs.uiAppImage }}/src"
 
   build-apiapp-image:
-    needs: [create-acr-resource]
+    needs: [deploy-acr-resource]
     runs-on: ubuntu-18.04
     environment: step-by-step
     if: ${{ github.event.inputs.apiAppImage }} 
     steps:
       - uses: actions/checkout@v2
+
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Build API app image
         run: |
-          echo ${{ github.event.inputs.apiAppImage }}
+          echo
+          echo "  az acr build \\"
+          echo "    --registry \"${{ github.event.inputs.acrName }}\" \\"
+          echo "    --image \"${{ github.event.inputs.acrName }}.azurecr.io/${{ github.event.inputs.apiAppImage }}:latest\" \\"
+          echo "    \"./${{ github.event.inputs.apiAppImage }}/src\""
+          echo
+          az acr build -r "${{ github.event.inputs.acrName }}" -t "${{ github.event.inputs.acrName }}.azurecr.io/${{ github.event.inputs.apiAppImage }}:latest" "./${{ github.event.inputs.apiAppImage }}/src"
 
   deploy-containerapp-resource:
     needs: [build-uiapp-image, build-apiapp-image]
@@ -84,15 +130,17 @@ jobs:
     environment: step-by-step
     steps:
       - uses: actions/checkout@v2
-      - name: Deploy Container App resource
-        run: |
-          echo true
 
-  clean-up-resources:
-    needs: [deploy-containerapp-resource]
-    runs-on: ubuntu-18.04
-    environment: step-by-step
-    steps:
-      - name: Clean up resources
-        run: |
-          echo Done.
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy ACR Resource
+        uses: azure/arm-deploy@v1
+        with:
+          resourceGroupName:  ${{ github.event.inputs.resourceGroupName }}
+          template: ./azure/bicep/main.bicep
+          parameters: acrName=${{ github.event.inputs.acrName }} uiAppName=${{ github.event.inputs.uiAppImage }} apiAppName=${{ github.event.inputs.apiAppImage }}
+          failOnStdErr: false
